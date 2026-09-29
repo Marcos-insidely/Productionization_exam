@@ -24,6 +24,7 @@ print(test_df.head())
 #convert age into category and create dummies
 df['AGE'] = df['AGE'].astype('category')
 df = pd.get_dummies(df, columns=['AGE'], drop_first=True)
+age = test_df['AGE']
 test_df['AGE'] = test_df['AGE'].astype('category')
 test_df = pd.get_dummies(test_df, columns=['AGE'], drop_first=True)
 print(df.head())
@@ -71,7 +72,104 @@ print("Predicted probabilities of default:\n", y_pred_proba)
 def campaign_analysis():
 
     result_df = test_df.drop(columns=['DEFAULTER', 'AGE_2', 'AGE_3'])
+    result_df['AGE'] = age
     result_df['predicted'] = y_pred_proba
     result_df['predicted_rounded'] = np.round(y_pred_proba, 0)
     # The prediction is calculated once (since the data does not change) when the script is run, and returned here.
     return result_df.to_dict(orient='records')
+
+# -------------------------------------------------
+# HTML frontend embedded directly in endpoint
+# -------------------------------------------------
+@app.get("/predict-ui", response_class=HTMLResponse)
+def home():
+
+    html_content = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Bank Loan Default Prediction</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                margin: 40px;
+            }
+            button {
+                padding: 10px 16px;
+                font-size: 16px;
+                margin-bottom: 20px;
+                cursor: pointer;
+            }
+            table {
+                border-collapse: collapse;
+                width: 100%;
+            }
+            th, td {
+                border: 1px solid #ccc;
+                padding: 8px;
+                text-align: center;
+            }
+            th {
+                background-color: #f4f4f4;
+            }
+        </style>
+    </head>
+    <body>
+
+        <h2>Bank Loan Default Prediction</h2>
+
+        <button onclick="loadData()">Load Summary</button>
+
+        <table id="summaryTable">
+            <thead>
+                <tr>
+                    <th>Customer ID</th>
+                    <th>Age band of the applicant</th>
+                    <th>Years of employment</th>
+                    <th>Years at current address</th>
+                    <th>Debt-to-income ratio (%)</th>
+                    <th>Credit card debt</th>
+                    <th>Other debts</th>
+                    <th>Predicted Probability of default</th>
+                    <th>Predicted Probability (Rounded)</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <script>
+            function loadData() {
+                fetch('/predict')
+                    .then(response => response.json())
+                    .then(data => {
+                        const tbody = document.querySelector('#summaryTable tbody');
+                        tbody.innerHTML = '';
+
+                        data.forEach(row => {
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = `
+                                <td>${row.SN}</td>
+                                <td>${row.AGE}</td>
+                                <td>${row.EMPLOY}</td>
+                                <td>${row.ADDRESS}</td>
+                                <td>${row.DEBTINC}</td>
+                                <td>${row.CREDDEBT}</td>
+                                <td>${row.OTHDEBT}</td>
+                                <td>${row.predicted}</td>
+                                <td>${row.predicted_rounded}</td>
+                            `;
+                            tbody.appendChild(tr);
+                        });
+                    })
+                    .catch(error => {
+                        alert('Error fetching data');
+                        console.error(error);
+                    });
+            }
+        </script>
+
+    </body>
+    </html>
+    """
+
+    return html_content
