@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 
@@ -12,7 +11,6 @@ from sklearn.metrics import (
     accuracy_score
 )
 
-plt.rcParams['figure.figsize'] = (6, 4)
 np.random.seed(42)
 
 app = FastAPI()
@@ -75,5 +73,5 @@ def campaign_analysis():
     result_df = test_df.drop(columns=['DEFAULTER', 'AGE_2', 'AGE_3'])
     result_df['predicted'] = y_pred_proba
     result_df['predicted_rounded'] = np.round(y_pred_proba, 0)
-    # The prediction is calculated once, when the script is run, and returned here.
+    # The prediction is calculated once (since the data does not change) when the script is run, and returned here.
     return result_df.to_dict(orient='records')
